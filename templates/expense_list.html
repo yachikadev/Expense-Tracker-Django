@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <h1>My Expenses</h1>
+    <a href="{% url 'add_expense' %}">Add Expense</a>
+    {% for e in expense %}
+        <p>{{ e.name }} - {{ e.amount }} - {{ e.category }}</p>
+    {% endfor %}
+    <form method="post" action="{% url 'logout' %}" style="display: inline;">
+        {% csrf_token %}
+        <button type="submit" class="nav-link text-white fw-bold" style="background: none; border: none; cursor: pointer;">Logout</button>
+    </form>
+</body>
+</html>
