@@ -3,17 +3,25 @@
 <body>
     <h1>My Expenses</h1>
     <a href="{% url 'add_expense' %}">Add Expense</a>
+
     {% for e in expense %}
-        <p>{{ e.name }} - {{ e.amount }} - {{ e.category }} - {{e.description}}
+    <div>
+        <h3>{{ e.name }} </h3> <p>₹ {{ e.amount }} <br> {{ e.category }} </p> <br> <small>{{e.description}}</small>
+
            <ul> 
-            <li><a href="{% url 'edit' e.pk %}">edit expense </a></li>
+            <li><a href="{% url 'edit' e.pk %}">edit expense </a></li> <br>
              <li><a href="{% url 'delete' e.pk %}">delete expense?</a></li>
            </ul>        
-            </p>
+    </div>       
     {% endfor %}
     <form method="post" action="{% url 'logout' %}" style="display: inline;">
         {% csrf_token %}
         <button type="submit" class="nav-link text-white fw-bold" style="background: none; border: none; cursor: pointer;">Logout</button>
+    </form>
+    <form method="GET">
+        {% csrf_token %}
+        <input class="form-control me-2" type="search" name="q" placeholder="Search" aria-label="Search"/>
+            <button class="btn btn-outline-light" type="submit">Search</button>
     </form>
 </body>
 </html>

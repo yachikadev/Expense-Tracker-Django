@@ -5,15 +5,20 @@ from .forms import AddForm
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.contrib.auth import login
+from django.db.models import Q
 
 @login_required
 def list_expense(request):
-    expense = Expense.objects.filter(user = request.user)
+    quary= request.GET.get('q')
+    if quary:
+        expense= Expense.objects.filter(Q(name__icontains=quary)|Q(category__icontains=quary),user=request.user)
+    else:    
+        expense = Expense.objects.filter(user = request.user)
     return render(request,'expense_list.html',{'expense': expense})
 @login_required    
 def add_expense(request):
     if request.method== 'POST':
-        form= AddForm(request.POST)
+        form= AddForm(request.POST,request.FILES)
         if form.is_valid():
             expense = form.save(commit=False)
             expense.user = request.user
