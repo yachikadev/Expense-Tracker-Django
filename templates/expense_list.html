@@ -4,7 +4,12 @@
     <h1>My Expenses</h1>
     <a href="{% url 'add_expense' %}">Add Expense</a>
     {% for e in expense %}
-        <p>{{ e.name }} - {{ e.amount }} - {{ e.category }}</p>
+        <p>{{ e.name }} - {{ e.amount }} - {{ e.category }} - {{e.description}}
+           <ul> 
+            <li><a href="{% url 'edit' e.pk %}">edit expense </a></li>
+             <li><a href="{% url 'delete' e.pk %}">delete expense?</a></li>
+           </ul>        
+            </p>
     {% endfor %}
     <form method="post" action="{% url 'logout' %}" style="display: inline;">
         {% csrf_token %}

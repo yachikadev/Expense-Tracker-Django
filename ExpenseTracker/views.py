@@ -1,4 +1,4 @@
-from django.shortcuts import render,redirect
+from django.shortcuts import render,redirect, get_object_or_404
 from .models import Expense
 from django.contrib.auth.decorators import login_required
 from .forms import AddForm
@@ -35,5 +35,26 @@ def register(request):
             messages.error(request,'sorry registeration is failed please check details') 
     else:
         form=UserCreationForm()
-    return render(request,'register.html',{"form":form})           
-    
+    return render(request,'register.html',{"form":form})          
+@login_required
+def edit_expense(request,pk):
+    expense= get_object_or_404(Expense,pk=pk,user=request.user)
+    if request.method=='POST':
+        form=AddForm(request.POST, instance=expense)
+        if form.is_valid():
+            form.save()
+            messages.success(request,'you edited the expense')
+            return redirect('expense_list')
+        else:
+            messages.error(request, 'please check the error')
+    else:
+        form=AddForm(instance=expense)
+    return render(request,'add_expense.html', {'form':form})
+@login_required
+def delete_expense(request,pk):
+    expense=get_object_or_404(Expense,pk=pk,user=request.user)
+    if request.method=='POST':
+        expense.delete()
+        return redirect('expense_list')
+    return render(request,'confirm.html',{'expense': expense})    
+
