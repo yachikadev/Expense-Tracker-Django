@@ -1,32 +1,55 @@
 from django.shortcuts import render,redirect, get_object_or_404
 from .models import Expense
-from django.contrib.auth.decorators import login_required
 from .forms import AddForm
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.contrib.auth import login
 from django.db.models import Q
+from django.views.generic import ListView, DeleteView,CreateView,UpdateView,DetailView
+from django.urls import reverse_lazy
+from django.contrib.auth.mixins import LoginRequiredMixin
+def cover(request):
+    if request.user.is_authenticated:
+        return redirect('expense_list')
+    return render(request, 'cover.html') 
+class ExpenseListView(LoginRequiredMixin,ListView):
+    model = Expense
+    template_name = 'expense_list.html'
+    context_object_name = 'expense'
+    def get_queryset(self):
+        query = self.request.GET.get('q')
+        category = self.request.GET.get('category')
+        
+        expense = Expense.objects.filter(user=self.request.user)
+        
+        if query:
+            expense = expense.filter(
+                Q(name__icontains=query) | Q(category__icontains=query)
+            )
+        if category:
+            expense = expense.filter(category=category)
+        
+        return expense
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['categories'] = Expense.objects.filter(user=self.request.user)\
+                            .values_list('category', flat=True).distinct()
+        context['selected_category'] = self.request.GET.get('category')    
+        return context
 
-@login_required
-def list_expense(request):
-    quary= request.GET.get('q')
-    if quary:
-        expense= Expense.objects.filter(Q(name__icontains=quary)|Q(category__icontains=quary),user=request.user)
-    else:    
-        expense = Expense.objects.filter(user = request.user)
-    return render(request,'expense_list.html',{'expense': expense})
-@login_required    
-def add_expense(request):
-    if request.method== 'POST':
-        form= AddForm(request.POST,request.FILES)
-        if form.is_valid():
-            expense = form.save(commit=False)
-            expense.user = request.user
-            expense.save()
-            return redirect('expense_list')
-    else:
-        form= AddForm()
-    return render(request,'add_expense.html',{'form':form})
+class ExpenseFormMixin(LoginRequiredMixin):
+    model = Expense
+    template_name = 'add_expense.html'
+    fields = ['name', 'amount', 'category', 'description', 'image']
+    success_url = reverse_lazy('expense_list')
+
+class AddExpense(ExpenseFormMixin, CreateView):
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        return super().form_valid(form)
+
+class UpdateExpense(ExpenseFormMixin, UpdateView):
+    pass
 
 def register(request):
     if request.method== 'POST':
@@ -41,25 +64,10 @@ def register(request):
     else:
         form=UserCreationForm()
     return render(request,'register.html',{"form":form})          
-@login_required
-def edit_expense(request,pk):
-    expense= get_object_or_404(Expense,pk=pk,user=request.user)
-    if request.method=='POST':
-        form=AddForm(request.POST, instance=expense)
-        if form.is_valid():
-            form.save()
-            messages.success(request,'you edited the expense')
-            return redirect('expense_list')
-        else:
-            messages.error(request, 'please check the error')
-    else:
-        form=AddForm(instance=expense)
-    return render(request,'add_expense.html', {'form':form})
-@login_required
-def delete_expense(request,pk):
-    expense=get_object_or_404(Expense,pk=pk,user=request.user)
-    if request.method=='POST':
-        expense.delete()
-        return redirect('expense_list')
-    return render(request,'confirm.html',{'expense': expense})    
+class DeleteExpense(LoginRequiredMixin,DeleteView):
+    model= Expense
+    template_name= 'confirm.html'
+    success_url= reverse_lazy('expense_list')
+    def get_queryset(self):
+        return Expense.objects.filter(user=self.request.user)
 
