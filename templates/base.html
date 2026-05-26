@@ -1,0 +1,409 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}ExpenseTracker{% endblock %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"/>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --pink: #f472b6;
+      --purple: #a78bfa;
+      --cyan: #38bdf8;
+      --bg: #080812;
+      --card-bg: #0f0f1e;
+      --border: #ffffff12;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Dot grid like cover page */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, #ffffff0a 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ======== NAVBAR ======== */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 66px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 2rem;
+      background: #08081299;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Rainbow top line */
+    nav::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--pink), var(--purple), var(--cyan), var(--pink));
+      background-size: 200% 100%;
+      animation: shimmer 4s linear infinite;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 0% 0%; }
+      100% { background-position: 200% 0%; }
+    }
+
+    /* Logo */
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.5px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .logo .dot { color: var(--pink); }
+
+    /* Divider */
+    .nav-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    /* Search */
+    .search-form {
+      flex: 1;
+      max-width: 320px;
+      position: relative;
+    }
+    .search-form input {
+      width: 100%;
+      background: #ffffff07;
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 9px 70px 9px 38px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.25s, background 0.25s;
+    }
+    .search-form input::placeholder { color: #64748b; }
+    .search-form input:focus {
+      border-color: #a78bfa66;
+      background: #a78bfa0a;
+    }
+    .s-icon {
+      position: absolute;
+      left: 13px; top: 50%;
+      transform: translateY(-50%);
+      color: #64748b;
+      font-size: 15px;
+      pointer-events: none;
+    }
+    .s-btn {
+      position: absolute;
+      right: 5px; top: 50%;
+      transform: translateY(-50%);
+      padding: 5px 14px;
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      border: none;
+      border-radius: 50px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .s-btn:hover { opacity: 0.85; transform: translateY(-50%) scale(1.04); }
+
+    /* Category dropdown */
+    .cat-wrap { position: relative; flex-shrink: 0; }
+
+    .cat-trigger {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 16px;
+      background: #ffffff07;
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      white-space: nowrap;
+    }
+    .cat-trigger:hover { border-color: #a78bfa55; background: #a78bfa0a; }
+    .cat-trigger .ci { font-size: 15px; color: var(--purple); }
+    .cat-trigger .cv {
+      font-size: 13px; color: var(--muted);
+      transition: transform 0.2s;
+    }
+    .cat-wrap.open .cv { transform: rotate(180deg); }
+    .cat-active-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--pink);
+      display: none;
+    }
+    .cat-active-dot.show { display: block; }
+
+    .cat-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 10px);
+      left: 0;
+      min-width: 200px;
+      background: #13132b;
+      border: 1px solid #ffffff1a;
+      border-radius: 16px;
+      padding: 8px;
+      z-index: 999;
+      animation: popIn 0.15s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .cat-wrap.open .cat-menu { display: block; }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .cat-menu a {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      color: var(--muted);
+      text-decoration: none;
+      transition: background 0.15s, color 0.15s;
+    }
+    .cat-menu a i { font-size: 15px; }
+    .cat-menu a:hover { background: #ffffff0d; color: var(--text); }
+    .cat-menu a.all { color: var(--cyan); }
+    .cat-menu a.all:hover { background: #38bdf810; }
+    .cat-menu a.selected { background: #a78bfa15; color: var(--purple); }
+    .cat-sep { height: 1px; background: #ffffff0d; margin: 5px 0; }
+
+    /* Right side */
+    .nav-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px 6px 7px;
+      background: #ffffff07;
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .avatar {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--pink), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .logout-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 18px;
+      background: transparent;
+      border: 1px solid #f472b630;
+      border-radius: 50px;
+      color: var(--pink);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, transform 0.2s;
+    }
+    .logout-btn:hover {
+      background: #f472b610;
+      border-color: #f472b655;
+      transform: scale(1.03);
+    }
+    .logout-btn i { font-size: 15px; }
+
+    /* ======== MESSAGES ======== */
+    .msg-wrap {
+      position: relative;
+      z-index: 5;
+      max-width: 1100px;
+      margin: 1rem auto 0;
+      padding: 0 2rem;
+    }
+    .msg {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 16px;
+      border-radius: 12px;
+      font-size: 13.5px;
+      margin-bottom: 8px;
+      animation: fadeUp 0.4s ease;
+    }
+    .msg.success { background: #1d9e7515; border: 1px solid #1d9e7535; color: #5dcaa5; }
+    .msg.error   { background: #f472b615; border: 1px solid #f472b635; color: var(--pink); }
+    .msg.info    { background: #38bdf815; border: 1px solid #38bdf835; color: var(--cyan); }
+
+    /* ======== MAIN ======== */
+    .main-wrap {
+      position: relative;
+      z-index: 5;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes bfloat {
+      0%, 100% { transform: translate(0,0) scale(1); }
+      33%  { transform: translate(20px,-20px) scale(1.05); }
+      66%  { transform: translate(-15px,15px) scale(0.97); }
+    }
+
+    /* ======== SCROLLBAR ======== */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: #ffffff15; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #a78bfa55; }
+  </style>
+</head>
+<body>
+
+<!-- Blobs - cover page jaisa -->
+<div style="position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;">
+  <div style="position:absolute;top:-150px;left:-150px;width:500px;height:500px;border-radius:50%;background:#f472b6;filter:blur(90px);opacity:0.2;animation:bfloat 9s ease-in-out infinite;"></div>
+  <div style="position:absolute;bottom:-150px;right:-150px;width:500px;height:500px;border-radius:50%;background:#7c3aed;filter:blur(90px);opacity:0.2;animation:bfloat 9s ease-in-out infinite;animation-delay:-4s;"></div>
+  <div style="position:absolute;top:40%;left:35%;width:300px;height:300px;border-radius:50%;background:#0ea5e9;filter:blur(80px);opacity:0.13;animation:bfloat 11s ease-in-out infinite;animation-delay:-7s;"></div>
+  <!-- Dot grid -->
+  <div style="position:absolute;inset:0;background-image:radial-gradient(circle,#ffffff09 1px,transparent 1px);background-size:32px 32px;"></div>
+</div>
+
+<nav>
+  <a href="{% url 'expense_list' %}" class="logo">expense<span class="dot">.</span>track</a>
+  <div class="nav-divider"></div>
+
+  <!-- Search -->
+  <form class="search-form" method="GET" action="{% url 'expense_list' %}">
+    <i class="ti ti-search s-icon"></i>
+    <input type="search" name="q" placeholder="Search expenses..." value="{{ request.GET.q|default:'' }}"/>
+    <button type="submit" class="s-btn">Go</button>
+  </form>
+
+  <!-- Category dropdown -->
+  <div class="cat-wrap" id="catWrap">
+    <button class="cat-trigger" onclick="toggleCat(event)">
+      <i class="ti ti-layout-grid ci"></i>
+      <span id="catLabel">{% if selected_category %}{{ selected_category }}{% else %}Categories{% endif %}</span>
+      <span class="cat-active-dot {% if selected_category %}show{% endif %}"></span>
+      <i class="ti ti-chevron-down cv"></i>
+    </button>
+    <div class="cat-menu">
+      <a href="{% url 'expense_list' %}" class="all {% if not selected_category %}selected{% endif %}">
+        <i class="ti ti-stack-2"></i> All expenses
+      </a>
+      {% if categories %}
+        <div class="cat-sep"></div>
+        {% for cat in categories %}
+        <a href="{% url 'expense_list' %}?category={{ cat }}"
+           class="{% if selected_category == cat %}selected{% endif %}">
+          <i class="ti ti-tag"></i> {{ cat }}
+        </a>
+        {% endfor %}
+      {% else %}
+        <div class="cat-sep"></div>
+        <a href="#" style="cursor:default; opacity:0.5;">
+          <i class="ti ti-mood-empty"></i> No categories yet
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right: user + logout -->
+  <div class="nav-right">
+    <div class="user-pill">
+      <div class="avatar">{{ request.user.username|slice:":1"|upper }}</div>
+      {{ request.user.username }}
+    </div>
+
+    <form method="POST" action="{% url 'logout' %}" style="display:inline;">
+      {% csrf_token %}
+      <button type="submit" class="logout-btn">
+        <i class="ti ti-logout"></i> Logout
+      </button>
+    </form>
+  </div>
+</nav>
+
+{% if messages %}
+  <div class="msg-wrap">
+    {% for message in messages %}
+      <div class="msg {{ message.tags }}">
+        <i class="ti ti-info-circle"></i> {{ message }}
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<div class="main-wrap">
+  {% block content %}{% endblock %}
+</div>
+
+<script>
+  function toggleCat(e) {
+    e.stopPropagation();
+    document.getElementById('catWrap').classList.toggle('open');
+  }
+  document.addEventListener('click', () => {
+    document.getElementById('catWrap').classList.remove('open');
+  });
+</script>
+
+</body>
+</html>
