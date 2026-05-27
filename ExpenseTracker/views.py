@@ -1,8 +1,6 @@
 from django.shortcuts import render,redirect, get_object_or_404
 from .models import Expense
-from .forms import AddForm
 from django.contrib.auth.forms import UserCreationForm
-from django.contrib import messages
 from django.contrib.auth import login
 from django.db.models import Q
 from django.views.generic import ListView, DeleteView,CreateView,UpdateView,DetailView
@@ -16,6 +14,7 @@ class ExpenseListView(LoginRequiredMixin,ListView):
     model = Expense
     template_name = 'expense_list.html'
     context_object_name = 'expense'
+    paginate_by = 10
     def get_queryset(self):
         query = self.request.GET.get('q')
         category = self.request.GET.get('category')
