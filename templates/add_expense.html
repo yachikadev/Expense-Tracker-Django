@@ -1,11 +1,225 @@
-<!DOCTYPE html>
-<html>
-<body>
-    <h1>Add Expense</h1>
-    <form method="POST">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Save</button>
+{% extends 'base.html' %}
+{% block title %}{% if form.instance.pk %}Edit{% else %}Add{% endif %} Expense{% endblock %}
+
+{% block content %}
+<style>
+  .form-wrap {
+    max-width: 540px;
+    margin: 0 auto;
+    animation: fadeUp 0.5s ease;
+  }
+  .form-header { margin-bottom: 2rem; }
+  .form-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+  .form-title span {
+    background: linear-gradient(135deg, var(--pink), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .form-sub { font-size: 13.5px; color: var(--muted); margin-top: 4px; }
+
+  .form-card {
+    background: #0f0f1e;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .form-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--pink), var(--purple), var(--cyan));
+  }
+
+  .field-group { margin-bottom: 1.3rem; }
+  .field-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    margin-bottom: 7px;
+    letter-spacing: 0.3px;
+  }
+  .field-label i { margin-right: 5px; color: var(--purple); }
+
+  .field-group input,
+  .field-group select,
+  .field-group textarea {
+    width: 100%;
+    background: #ffffff07;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 11px 15px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.25s, background 0.25s;
+  }
+  .field-group input::placeholder,
+  .field-group textarea::placeholder { color: #475569; }
+  .field-group input:focus,
+  .field-group select:focus,
+  .field-group textarea:focus {
+    border-color: #a78bfa66;
+    background: #a78bfa08;
+  }
+  .field-group select {
+    appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+  }
+  .field-group select option { background: #13132b; }
+  .field-group textarea { resize: vertical; min-height: 90px; }
+
+  /* File upload */
+  .file-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 1.5rem;
+    border: 1.5px dashed #ffffff18;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color 0.25s, background 0.25s;
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+  }
+  .file-label:hover { border-color: #a78bfa55; background: #a78bfa08; color: var(--purple); }
+  .file-label i { font-size: 26px; color: var(--purple); }
+  .field-group input[type="file"] { display: none; }
+
+  .errorlist {
+    list-style: none;
+    margin-top: 5px;
+    padding: 0;
+  }
+  .errorlist li {
+    font-size: 12px;
+    color: var(--pink);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 1.8rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+  .submit-btn {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 12px;
+    background: linear-gradient(135deg, var(--pink), var(--purple));
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.2s;
+    position: relative;
+  }
+  .submit-btn::after {
+    content: '';
+    position: absolute;
+    inset: -2px; border-radius: 14px;
+    background: linear-gradient(135deg, var(--pink), var(--purple));
+    filter: blur(10px); opacity: 0.3; z-index: -1;
+  }
+  .submit-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+
+  .cancel-btn {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 12px 22px;
+    background: #ffffff07;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    text-decoration: none;
+    transition: background 0.2s, color 0.2s;
+  }
+  .cancel-btn:hover { background: #ffffff0f; color: var(--text); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<div class="form-wrap">
+  <div class="form-header">
+    <div class="form-title">
+      {% if form.instance.pk %}Edit <span>Expense</span>{% else %}Add <span>Expense</span>{% endif %}
+    </div>
+    <div class="form-sub">
+      {% if form.instance.pk %}Update the details below{% else %}Fill in the details to add a new expense{% endif %}
+    </div>
+  </div>
+
+  <div class="form-card">
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      {% for field in form %}
+      <div class="field-group">
+        <label class="field-label" for="{{ field.id_for_label }}">
+          <i class="ti ti-{% if field.name == 'name' %}text-size{% elif field.name == 'amount' %}currency-rupee{% elif field.name == 'category' %}tag{% elif field.name == 'description' %}notes{% elif field.name == 'image' %}photo{% endif %}"></i>
+          {{ field.label }}
+        </label>
+
+        {% if field.name == 'image' %}
+          <label class="file-label" for="{{ field.id_for_label }}">
+            <i class="ti ti-cloud-upload"></i>
+            <span>Click to upload receipt image</span>
+            <span style="font-size:11px;color:#475569;">PNG, JPG up to 5MB</span>
+          </label>
+          {{ field }}
+        {% else %}
+          {{ field }}
+        {% endif %}
+
+        {% if field.errors %}
+          <ul class="errorlist">
+            {% for error in field.errors %}
+              <li><i class="ti ti-alert-circle"></i> {{ error }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+
+      <div class="form-actions">
+        <a href="{% url 'expense_list' %}" class="cancel-btn">
+          <i class="ti ti-arrow-left"></i> Cancel
+        </a>
+        <button type="submit" class="submit-btn">
+          <i class="ti ti-{% if form.instance.pk %}check{% else %}plus{% endif %}"></i>
+          {% if form.instance.pk %}Save Changes{% else %}Add Expense{% endif %}
+        </button>
+      </div>
     </form>
-</body>
-</html>
+  </div>
+</div>
+{% endblock %}
