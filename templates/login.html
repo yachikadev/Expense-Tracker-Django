@@ -1,16 +1,225 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>login</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login — ExpenseTracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"/>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --pink: #f472b6; --purple: #a78bfa; --cyan: #38bdf8; --bg: #080812; --border: #ffffff12; --text: #f1f5f9; --muted: #94a3b8; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Background blobs — cover page jaisa */
+    .blobs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .blob { position: absolute; border-radius: 50%; filter: blur(90px); animation: bfloat 9s ease-in-out infinite; }
+    .b1 { width: 450px; height: 450px; background: #f472b6; top: -150px; left: -150px; opacity: 0.2; }
+    .b2 { width: 450px; height: 450px; background: #7c3aed; bottom: -150px; right: -150px; opacity: 0.2; animation-delay: -4s; }
+    .b3 { width: 280px; height: 280px; background: #0ea5e9; top: 40%; left: 38%; opacity: 0.12; animation-delay: -7s; }
+    .dots { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: radial-gradient(circle, #ffffff09 1px, transparent 1px); background-size: 32px 32px; }
+    @keyframes bfloat { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(20px,-20px) scale(1.05)} 66%{transform:translate(-15px,15px) scale(0.97)} }
+
+    /* Login card wrapper */
+    .login-wrap {
+      position: relative; z-index: 5;
+      width: 100%; max-width: 420px;
+      padding: 1.5rem;
+      animation: fadeUp 0.5s ease;
+    }
+
+    /* Brand logo at top */
+    .brand { text-align: center; margin-bottom: 2rem; }
+    .brand-logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.4rem; font-weight: 800;
+      color: var(--text); letter-spacing: -0.5px;
+      text-decoration: none; display: inline-block;
+    }
+    .brand-logo span { color: var(--pink); }
+    .brand-tagline { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    /* Card */
+    .login-card {
+      background: #0f0f1e;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 2rem;
+      position: relative; overflow: hidden;
+    }
+    /* Rainbow top border */
+    .login-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--pink), var(--purple), var(--cyan));
+    }
+
+    .card-title { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 700; color: var(--text); margin-bottom: 0.3rem; }
+    .card-sub { font-size: 13px; color: var(--muted); margin-bottom: 1.8rem; }
+
+    /* Field styling */
+    .field-group { margin-bottom: 1.2rem; }
+    .field-label {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 7px;
+    }
+    .field-label i { color: var(--purple); }
+
+    /* Override Django default input styles */
+    .field-group input[type="text"],
+    .field-group input[type="password"] {
+      width: 100%;
+      background: #ffffff07;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 11px 15px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.25s, background 0.25s;
+    }
+    .field-group input[type="text"]::placeholder,
+    .field-group input[type="password"]::placeholder { color: #475569; }
+    .field-group input[type="text"]:focus,
+    .field-group input[type="password"]:focus {
+      border-color: #a78bfa66;
+      background: #a78bfa08;
+    }
+
+    /* Django error list */
+    .errorlist { list-style: none; margin-top: 6px; padding: 0; }
+    .errorlist li { font-size: 12px; color: var(--pink); display: flex; align-items: center; gap: 4px; }
+
+    /* Non-field errors */
+    .non-field-errors {
+      background: #f472b615; border: 1px solid #f472b635;
+      border-radius: 10px; padding: 10px 14px;
+      margin-bottom: 1rem;
+    }
+    .non-field-errors li { font-size: 13px; color: var(--pink); list-style: none; display: flex; align-items: center; gap: 6px; }
+
+    /* Submit button with glow */
+    .submit-btn {
+      width: 100%; padding: 13px;
+      background: linear-gradient(135deg, var(--pink), var(--purple));
+      color: #fff; border: none; border-radius: 12px;
+      font-size: 14.5px; font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer; margin-top: 0.5rem;
+      transition: opacity 0.2s, transform 0.2s;
+      position: relative;
+    }
+    .submit-btn::after {
+      content: ''; position: absolute; inset: -2px; border-radius: 14px;
+      background: linear-gradient(135deg, var(--pink), var(--purple));
+      filter: blur(12px); opacity: 0.3; z-index: -1;
+    }
+    .submit-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+
+    /* Bottom link */
+    .card-footer { text-align: center; margin-top: 1.5rem; font-size: 13.5px; color: var(--muted); }
+    .card-footer a { color: var(--purple); text-decoration: none; font-weight: 500; }
+    .card-footer a:hover { color: var(--pink); }
+
+    /* Django messages */
+    .msg { padding: 10px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .msg.error   { background: #f472b615; border: 1px solid #f472b635; color: var(--pink); }
+    .msg.success { background: #1d9e7515; border: 1px solid #1d9e7535; color: #5dcaa5; }
+
+    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  </style>
 </head>
 <body>
-     <form method="post">
-                {% csrf_token %}
-                {{ form.as_p }}
-                <button type="submit" class="btn btn-primary w-100 mt-2">Login</button>
-            </form>
-            <p>Don't have an account? <a href="{% url 'register' %}">Register</a></p>
+
+  <!-- Animated background -->
+  <div class="blobs">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+  </div>
+  <div class="dots"></div>
+
+  <div class="login-wrap">
+
+    <!-- Brand -->
+    <div class="brand">
+      <a href="{% url 'cover' %}" class="brand-logo">expense<span>.</span>track</a>
+      <div class="brand-tagline">Track your expenses smartly</div>
+    </div>
+
+    <div class="login-card">
+      <div class="card-title">Welcome back 👋</div>
+      <div class="card-sub">Login to your account</div>
+
+      <!-- Django messages (success/error) -->
+      {% if messages %}
+        {% for message in messages %}
+          <div class="msg {{ message.tags }}">
+            <i class="ti ti-info-circle"></i> {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="POST">
+        {% csrf_token %}
+
+        <!-- Non-field errors (wrong password etc) -->
+        {% if form.non_field_errors %}
+          <ul class="non-field-errors">
+            {% for error in form.non_field_errors %}
+              <li><i class="ti ti-alert-circle"></i> {{ error }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+
+        <!-- Username field -->
+        <div class="field-group">
+          <label class="field-label" for="{{ form.username.id_for_label }}">
+            <i class="ti ti-user"></i> Username
+          </label>
+          {{ form.username }}
+          {% if form.username.errors %}
+            <ul class="errorlist">
+              {% for error in form.username.errors %}
+                <li><i class="ti ti-alert-circle"></i> {{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+
+        <!-- Password field -->
+        <div class="field-group">
+          <label class="field-label" for="{{ form.password.id_for_label }}">
+            <i class="ti ti-lock"></i> Password
+          </label>
+          {{ form.password }}
+          {% if form.password.errors %}
+            <ul class="errorlist">
+              {% for error in form.password.errors %}
+                <li><i class="ti ti-alert-circle"></i> {{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+
+        <button type="submit" class="submit-btn">Login</button>
+      </form>
+
+      <!-- Register link -->
+      <div class="card-footer">
+        Account nahi hai? <a href="{% url 'register' %}">Register karo</a>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
