@@ -18,7 +18,8 @@ class ExpenseListView(LoginRequiredMixin,ListView):
     def get_queryset(self):
         query = self.request.GET.get('q')
         category = self.request.GET.get('category')
-        
+        date_from = self.request.GET.get('date_from')
+        date_to = self.request.GET.get('date_to')
         expense = Expense.objects.filter(user=self.request.user)
         
         if query:
@@ -29,6 +30,10 @@ class ExpenseListView(LoginRequiredMixin,ListView):
             expense = expense.filter(category=category)
         
         return expense
+        if date_from:
+            expense = expense.filter(date__gte=date_from)
+        if date_to:
+            expense = expense.filter(date__lte=date_to)
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['categories'] = Expense.objects.filter(user=self.request.user)\
