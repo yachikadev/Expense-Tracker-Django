@@ -29,11 +29,11 @@ class ExpenseListView(LoginRequiredMixin,ListView):
         if category:
             expense = expense.filter(category=category)
         
-        return expense
         if date_from:
             expense = expense.filter(date__gte=date_from)
         if date_to:
             expense = expense.filter(date__lte=date_to)
+        return expense
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['categories'] = Expense.objects.filter(user=self.request.user)\
